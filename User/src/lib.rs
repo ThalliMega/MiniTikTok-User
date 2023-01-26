@@ -16,6 +16,7 @@ use tonic::{transport::Server, Response, Status};
 mod combind_incoming;
 mod health_check;
 pub mod proto;
+mod user_service;
 
 type AsyncWrapper<'a, T> = Pin<Box<dyn Future<Output = Result<Response<T>, Status>> + Send + 'a>>;
 

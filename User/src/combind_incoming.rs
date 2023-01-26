@@ -6,7 +6,7 @@ use std::{
     time::Duration,
 };
 
-use futures_core::Stream;
+use tokio_stream::Stream;
 use tonic::transport::server::TcpIncoming;
 
 pub struct CombinedIncoming {
