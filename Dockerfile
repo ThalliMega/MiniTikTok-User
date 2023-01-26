@@ -5,7 +5,7 @@ RUN mkdir -p User/src \
     && touch User/src/main.rs \
     && printenv REPLACE_ALPINE > reposcript \
     && sed -i -f reposcript /etc/apk/repositories
-RUN apk add --no-cache -U musl-dev protoc
+RUN apk add --no-cache -U musl-dev protoc protobuf
 COPY .cargo/ .cargo/
 COPY Cargo.toml ./
 COPY User/Cargo.toml Auth/
