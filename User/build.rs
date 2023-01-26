@@ -1,3 +1,7 @@
 fn main() -> std::io::Result<()> {
-    tonic_build::compile_protos("proto/user.proto")
+    let builder = tonic_build::configure();
+    builder.compile(
+        &["proto/user.proto", "proto/health_check.proto"],
+        &["proto"],
+    )
 }
