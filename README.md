@@ -20,12 +20,13 @@ CREATE TABLE `user` (
 	`username` VARCHAR(20) NOT NULL CHARACTER SET utf8 COLLATE utf8_bin,
 	`follow_count` INT(20) unsigned NOT NULL DEFAULT '0',
 	`follower_count` INT(20) unsigned NOT NULL DEFAULT '0',
-	`is_follow` BOOLEAN(20) NOT NULL DEFAULT 'false',
+	`is_follow` BOOLEAN(20) NOT NULL DEFAULT 'false' COMMENT 'why do i add this',
 	PRIMARY KEY (`id`)
 );
 ```
 
-*Note: Id 0 is preserved and used as a user that does not exist.*
+*Note: Id 0 is preserved and used as a user that does not exist.*  
+***Note: DO NOT use the table above. There should be a graph database.***
 
 ### RUST_LOG
 
