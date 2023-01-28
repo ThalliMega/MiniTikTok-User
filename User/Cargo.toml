@@ -7,12 +7,13 @@ edition = "2021"
 
 [dependencies]
 env_logger = { version = "0", default-features = false, features = ["auto-color", "color", "humantime"] }
-tokio-stream = { version = "0", default-features = false }
+futures-core = { version = "0", default-features = false }
 log = { version = "0", default-features = false }
 prost = { version = "0", default-features = false }
 tokio = { version = "1", default-features = false, features = ["rt-multi-thread"] }
-tokio-postgres = { version = "0", default-features = false, features = ["runtime"] }
+bolt-client = { version = "0", default-features = false, features = ["tokio-stream"] }
 tonic = { version = "0", default-features = false, features = ["transport", "codegen", "prost"] }
+tokio-util = { version = "0.7.4", default-features = false, features = ["compat"] }
 
 [build-dependencies]
 tonic-build = "0"

@@ -8,25 +8,22 @@ Server listens on `0.0.0.0:14514` and `[::]:14514`.
 
 ## Runtime env vars
 
-### POSTGRES_URL
+### BOLT_URL
 
-Check the [documention](https://docs.rs/tokio-postgres/latest/tokio_postgres/config/struct.Config.html) for details.
+The address of the graph database.
 
-#### postgres table layouts
+### BOLT_DOMAIN
 
-```sql
-CREATE TABLE `user` (
-	`id` INT(32) unsigned AUTO_INCREMENT,
-	`username` VARCHAR(20) NOT NULL CHARACTER SET utf8 COLLATE utf8_bin,
-	`follow_count` INT(20) unsigned NOT NULL DEFAULT '0',
-	`follower_count` INT(20) unsigned NOT NULL DEFAULT '0',
-	`is_follow` BOOLEAN(20) NOT NULL DEFAULT 'false' COMMENT 'why do i add this',
-	PRIMARY KEY (`id`)
-);
-```
+This env var is optional.
+If set, TLS negotiation will be attempted.
 
-*Note: Id 0 is preserved and used as a user that does not exist.*  
-***Note: DO NOT use the table above. There should be a graph database.***
+### BOLT_USERNAME
+
+The username of the graph database.
+
+### BOLT_PASSWORD
+
+The password of the graph database.
 
 ### RUST_LOG
 
