@@ -51,7 +51,7 @@ impl user_service_server::UserService for UserService {
             let mut bolt_client = map_bad_db_and_log(self.bolt_pool.get().await)?;
 
             map_bad_db_and_log(bolt_client.run(
-                "match (target:User {id: $target_id}) with target optional match (follower:User)-[:FOLLOW]->(target) with count(follower) as follower_count, collect(follower) as followers, target optional match (me:User {id: $user_id}) where me in followers with follower_count, count(me)>0 as is_follow, target optional match (target)-[:FOLLOW]->(follow:User) with count(follow) as follow_count, follower_count, is_follow, target return target.id, follow_count, follower_count, is_follow;",
+                "match (target:User {id: $target_id}) with target optional match (follower:User)-[:FOLLOW]->(target) with count(follower) as follower_count, collect(follower) as followers, target optional match (me:User {id: $user_id}) where me in followers with follower_count, count(me)>0 as is_follow, target optional match (target)-[:FOLLOW]->(follow:User) return target.username, count(follow) as follow_count, follower_count, is_follow;",
                 Some([("target_id", bolt_proto::Value::Integer(target_id.into())), ("user_id", bolt_proto::Value::Integer(user_id.into()))].into_iter().collect()),
                 None,
             ).await)?;
