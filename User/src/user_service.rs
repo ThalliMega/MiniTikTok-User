@@ -97,7 +97,72 @@ impl user_service_server::UserService for UserService {
         's: 'a,
         Self: 'a,
     {
-        todo!()
+        let req = request.into_inner();
+        let target_ids = req
+            .user_ids
+            .into_iter()
+            .map(|v| bolt_proto::Value::Integer(v.into()))
+            .collect();
+        let token = req.token;
+
+        let mut auth_client = self.auth_client.clone();
+
+        Box::pin(async move {
+            let user_id = match auth_client
+                .auth(Request::new(AuthRequest { token }))
+                .await?
+                .into_inner()
+            {
+                AuthResponse {
+                    user_id,
+                    status_code,
+                } if status_code == AuthStatusCode::Success.into() => user_id,
+                _ => {
+                    return Ok(Response::new(UserInfoResponses {
+                        responses: vec![UserInfoResponse {
+                            status_code: UserInfoStatusCode::AuthFail.into(),
+                            ..Default::default()
+                        }],
+                    }))
+                }
+            };
+
+            let mut bolt_client = map_bad_db_and_log(self.bolt_pool.get().await)?;
+
+            map_bad_db_and_log(bolt_client.run(
+                "match (target:User) where target.id in $target_ids with target optional match (follower:User)-[:FOLLOW]->(target) with count(follower) as follower_count, collect(follower) as followers, target optional match (me:User {id: $user_id}) where me in followers with follower_count, count(me)>0 as is_follow, target optional match (target)-[:FOLLOW]->(follow:User) return target.id, target.username, count(follow) as follow_count, follower_count, is_follow;",
+                Some([("target_ids", bolt_proto::Value::List(target_ids)), ("user_id", bolt_proto::Value::Integer(user_id.into()))].into_iter().collect()),
+                None,
+            ).await)?;
+
+            let results = map_bad_db_and_log(
+                bolt_client
+                    .pull(Some([("n", 1)].into_iter().collect()))
+                    .await,
+            )?
+            .0;
+
+            let mut res_vec = Vec::with_capacity(results.len());
+            for record in results {
+                let fields = record.fields();
+                res_vec.push(UserInfoResponse {
+                    status_code: UserInfoStatusCode::Success.into(),
+                    username: map_bad_db_and_log(fields[1].clone().try_into())?,
+                    follow_count: map_bad_db_and_log(
+                        map_bad_db_and_log::<i64, _>(fields[2].clone().try_into())?.try_into(),
+                    )?,
+                    follower_count: map_bad_db_and_log(
+                        map_bad_db_and_log::<i64, _>(fields[3].clone().try_into())?.try_into(),
+                    )?,
+                    is_follow: map_bad_db_and_log(fields[4].clone().try_into())?,
+                    user_id: map_bad_db_and_log(
+                        map_bad_db_and_log::<i64, _>(fields[0].clone().try_into())?.try_into(),
+                    )?,
+                });
+            }
+
+            Ok(Response::new(UserInfoResponses { responses: res_vec }))
+        })
     }
 }
 
