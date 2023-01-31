@@ -25,6 +25,10 @@ The username of the graph database.
 
 The password of the graph database.
 
+### AUTH_URL
+
+The url of the Auth Grpc service.
+
 ### RUST_LOG
 
 Check the [documention](https://docs.rs/env_logger/latest/env_logger/#enabling-logging) for details.
