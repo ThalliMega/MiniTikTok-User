@@ -12,17 +12,13 @@ use bb8_bolt::{
     bolt_proto::version::{V4_2, V4_3},
 };
 use combind_incoming::CombinedIncoming;
-use health_check::HealthChecker;
-use proto::{
-    auth_service_client::AuthServiceClient, health_checker_server::HealthCheckerServer,
-    user_service_server::UserServiceServer,
-};
+use proto::{auth_service_client::AuthServiceClient, user_service_server::UserServiceServer};
 use tokio::task::JoinHandle;
 use tonic::{transport::Server, Response, Status};
+use tonic_health::server::health_reporter;
 use user_service::UserService;
 
 mod combind_incoming;
-mod health_check;
 pub mod proto;
 mod user_service;
 
@@ -71,15 +67,21 @@ pub fn start_up() -> Result<JoinHandle<Result<(), DynError>>, &'static str> {
 
     let auth_url = env::var("AUTH_URL").map_err(|_| "AUTH_URL doesn't exist.")?;
 
-    Ok(tokio::spawn(async {
+    let (mut health_reporter, health_service) = health_reporter();
+
+    Ok(tokio::spawn(async move {
         let bolt_manager =
             bb8_bolt::Manager::new(bolt_url, bolt_domain, [V4_3, V4_2, 0, 0], bolt_metadata)
                 .await?;
 
+        health_reporter
+            .set_serving::<UserServiceServer<UserService>>()
+            .await;
+
         Server::builder()
             .concurrency_limit_per_connection(256)
             .tcp_keepalive(Some(Duration::from_secs(10)))
-            .add_service(HealthCheckerServer::new(HealthChecker))
+            .add_service(health_service)
             .add_service(UserServiceServer::new(UserService {
                 bolt_pool: bb8::Pool::builder().build(bolt_manager).await?,
                 auth_client: AuthServiceClient::connect(auth_url).await?,
