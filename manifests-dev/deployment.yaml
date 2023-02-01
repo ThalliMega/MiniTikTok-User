@@ -27,20 +27,26 @@ spec:
                 -   image: ${IMAGE}
                     imagePullPolicy: IfNotPresent
                     name: bawling-minidouyin-user-grpc
-                    readinessProbe: # 如果你们有 /check_health 接口的话就加这一个段落，该接口返回 200 表示健康
+                    readinessProbe:
+                        exec:
+                            command: ["/bin/grpc_health_probe", "-addr=:14514"]
+                        initialDelaySeconds: 5
+                        periodSeconds: 5
+                        successThreshold: 2
+                    livenessProbe: # 如果你们有 /check_health 接口的话就加这一个段落，该接口返回 200 表示健康
                         failureThreshold: 3
-                        grpc:
-                            port: 14514
-                        initialDelaySeconds: 3
+                        exec:
+                            command: ["/bin/grpc_health_probe", "-addr=:14514"]
+                        initialDelaySeconds: 10
                         periodSeconds: 10
-                        successThreshold: 1
                         timeoutSeconds: 1
-                    lifecycle:
-                        preStop:
-                            exec:
-                                command:
-                                    - sleep
-                                    - "20"
+                    # I deleted the hook for that the app will capture the ctrlc signal
+                    # lifecycle:
+                    #     preStop:
+                    #         exec:
+                    #             command:
+                    #                 - sleep
+                    #                 - 15
                     envFrom:
                         -   configMapRef:
                                 name: env-config

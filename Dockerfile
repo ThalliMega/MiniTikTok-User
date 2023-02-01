@@ -17,7 +17,12 @@ RUN cargo build --release --frozen --bins
 FROM alpine:3.17
 WORKDIR /app
 ARG PACKAGE=mini_tiktok_user
+RUN GRPC_HEALTH_PROBE_VERSION=v0.4.15 && \
+    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
+    chmod +x /bin/grpc_health_probe
 COPY --from=build /src/target/release/${PACKAGE} ./
 ENTRYPOINT [ "./${PACKAGE}" ]
 
 EXPOSE 14514
+
+HEALTHCHECK CMD /bin/grpc_health_probe -addr=:14514 || exit 1
