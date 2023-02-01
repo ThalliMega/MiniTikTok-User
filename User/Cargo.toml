@@ -10,7 +10,7 @@ env_logger = { version = "0", default-features = false, features = ["auto-color"
 futures-core = { version = "0", default-features = false }
 log = { version = "0", default-features = false }
 prost = { version = "0", default-features = false }
-tokio = { version = "1", default-features = false, features = ["rt-multi-thread"] }
+tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "signal"] }
 bb8-bolt = "0"
 tonic = { version = "0", default-features = false, features = ["transport", "codegen", "prost"] }
 tonic-health = { version = "0", default-features = false, features = ["transport"]}

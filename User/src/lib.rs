@@ -86,10 +86,14 @@ pub fn start_up() -> Result<JoinHandle<Result<(), DynError>>, &'static str> {
                 bolt_pool: bb8::Pool::builder().build(bolt_manager).await?,
                 auth_client: AuthServiceClient::connect(auth_url).await?,
             }))
-            .serve_with_incoming(CombinedIncoming::new(
-                (Ipv6Addr::UNSPECIFIED, 14514).into(),
-                (Ipv4Addr::UNSPECIFIED, 14514).into(),
-            )?)
+            .serve_with_incoming_shutdown(
+                CombinedIncoming::new(
+                    (Ipv6Addr::UNSPECIFIED, 14514).into(),
+                    (Ipv4Addr::UNSPECIFIED, 14514).into(),
+                )?,
+                // TODO?: unwrap
+                async { tokio::signal::ctrl_c().await.unwrap() },
+            )
             .await?;
 
         Ok(())
