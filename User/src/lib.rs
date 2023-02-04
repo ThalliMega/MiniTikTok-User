@@ -1,23 +1,14 @@
-use std::{
-    env,
-    error::Error,
-    future::Future,
-    net::{Ipv4Addr, Ipv6Addr},
-    pin::Pin,
-    time::Duration,
-};
+use std::{env, error::Error, future::Future, net::Ipv6Addr, pin::Pin, time::Duration};
 
 use bb8_bolt::{
     bb8,
     bolt_proto::version::{V4_2, V4_3},
 };
-use combind_incoming::CombinedIncoming;
 use proto::{auth_service_client::AuthServiceClient, user_service_server::UserServiceServer};
 use tonic::{transport::Server, Response, Status};
 use tonic_health::server::health_reporter;
 use user_service::UserService;
 
-mod combind_incoming;
 pub mod proto;
 mod user_service;
 
@@ -83,11 +74,8 @@ pub async fn start_up() -> Result<(), DynError> {
             bolt_pool: bb8::Pool::builder().build(bolt_manager).await?,
             auth_client: AuthServiceClient::connect(auth_url).await?,
         }))
-        .serve_with_incoming_shutdown(
-            CombinedIncoming::new(
-                (Ipv6Addr::UNSPECIFIED, 14514).into(),
-                (Ipv4Addr::UNSPECIFIED, 14514).into(),
-            )?,
+        .serve_with_shutdown(
+            (Ipv6Addr::UNSPECIFIED, 14514).into(),
             // TODO?: unwrap
             async { tokio::signal::ctrl_c().await.unwrap() },
         )
