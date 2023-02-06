@@ -4,7 +4,7 @@ use bb8_bolt::{
     bb8,
     bolt_proto::version::{V4_2, V4_3},
 };
-use proto::{auth_service_client::AuthServiceClient, user_service_server::UserServiceServer};
+use proto::user_service_server::UserServiceServer;
 use tonic::{transport::Server, Response, Status};
 use tonic_health::server::health_reporter;
 use user_service::UserService;
@@ -55,8 +55,6 @@ pub async fn start_up() -> Result<(), DynError> {
 
     let bolt_domain = env::var("BOLT_DOMAIN").ok();
 
-    let auth_url = env::var("AUTH_URL").map_err(|_| "AUTH_URL doesn't exist.")?;
-
     let (mut health_reporter, health_service) = health_reporter();
 
     let bolt_manager =
@@ -72,7 +70,6 @@ pub async fn start_up() -> Result<(), DynError> {
         .add_service(health_service)
         .add_service(UserServiceServer::new(UserService {
             bolt_pool: bb8::Pool::builder().build(bolt_manager).await?,
-            auth_client: AuthServiceClient::connect(auth_url).await?,
         }))
         .serve_with_shutdown(
             (Ipv6Addr::UNSPECIFIED, 14514).into(),
