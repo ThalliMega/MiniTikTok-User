@@ -4,7 +4,9 @@ use bb8_bolt::{
     bb8,
     bolt_proto::version::{V4_2, V4_3},
 };
+use log::{info, warn};
 use proto::user_service_server::UserServiceServer;
+use tokio::signal::unix::{signal, SignalKind};
 use tonic::{transport::Server, Response, Status};
 use tonic_health::server::health_reporter;
 use user_service::UserService;
@@ -64,6 +66,8 @@ pub async fn start_up() -> Result<(), DynError> {
         .set_serving::<UserServiceServer<UserService>>()
         .await;
 
+    let mut term_sig = signal(SignalKind::terminate())?;
+
     Server::builder()
         .concurrency_limit_per_connection(256)
         .tcp_keepalive(Some(Duration::from_secs(10)))
@@ -74,7 +78,12 @@ pub async fn start_up() -> Result<(), DynError> {
         .serve_with_shutdown(
             (Ipv6Addr::UNSPECIFIED, 14514).into(),
             // TODO?: unwrap
-            async { tokio::signal::ctrl_c().await.unwrap() },
+            async {
+                match term_sig.recv().await {
+                    Some(()) => info!("start graceful shutdown"),
+                    None => warn!("stream of SIGTERM closed"),
+                }
+            },
         )
         .await?;
 
