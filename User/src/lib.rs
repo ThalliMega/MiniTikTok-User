@@ -66,7 +66,7 @@ pub async fn start_up() -> Result<(), DynError> {
         .set_serving::<UserServiceServer<UserService>>()
         .await;
 
-    let mut term_sig = signal(SignalKind::terminate())?;
+    let mut sigterm = signal(SignalKind::terminate())?;
 
     Server::builder()
         .concurrency_limit_per_connection(256)
@@ -79,7 +79,7 @@ pub async fn start_up() -> Result<(), DynError> {
             (Ipv6Addr::UNSPECIFIED, 14514).into(),
             // TODO?: unwrap
             async {
-                match term_sig.recv().await {
+                match sigterm.recv().await {
                     Some(()) => info!("start graceful shutdown"),
                     None => warn!("stream of SIGTERM closed"),
                 }
