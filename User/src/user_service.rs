@@ -16,6 +16,38 @@ pub struct UserService {
 }
 
 impl user_service_server::UserService for UserService {
+    fn get_infos<'s, 'a>(&self, request: Request<UserIds>) -> AsyncWrapper<UserInfos>
+    where
+        's: 'a,
+        Self: 'a,
+    {
+        Box::pin(async move {
+            let mut conn = map_bad_db_and_log(self.bolt_pool.get().await)?;
+
+            let records = get_records(
+                &mut conn,
+                "MATCH (u:User) WHERE u.id in $ids RETURN u.id, u.username, u.avatar, u.background_image, u.signature;",
+                request,
+            ).await?;
+
+            Ok(Response::new(UserInfos {
+                infos: records
+                    .into_iter()
+                    .map(|r| {
+                        let fields = r.fields();
+                        // TODO: panic, clone
+                        UserInfo {
+                            id: fields.get(0).unwrap().clone().try_into().unwrap(),
+                            username: fields.get(1).unwrap().clone().try_into().unwrap(),
+                            avatar: fields.get(2).unwrap().clone().try_into().unwrap(),
+                            background_img: fields.get(3).unwrap().clone().try_into().unwrap(),
+                            signature: fields.get(4).unwrap().clone().try_into().unwrap(),
+                        }
+                    })
+                    .collect(),
+            }))
+        })
+    }
     fn get_usernames<'s, 'a>(&self, request: Request<UserIds>) -> AsyncWrapper<IdWithStringValues>
     where
         's: 'a,
