@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+    annotations:
+        consul.hashicorp.com/service-name: minitiktok-user-grpc
+        consul.hashicorp.com/service-port: grpc
+        consul.hashicorp.com/service-sync: 'true'
+        consul.hashicorp.com/service-tags: 'grpc,minitiktok,14514'
+    name: minitiktok-user-grpc
+    namespace: minitiktok-user-grpc
+spec:
+    ports:
+        -   name: grpc
+            port: 14514
+            protocol: TCP
+            targetPort: 14514
+    selector:
+        name: minitiktok-user-grpc
+        branch: dev
+    type: ClusterIP
