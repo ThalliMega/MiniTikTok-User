@@ -180,10 +180,15 @@ impl user_service_server::UserService for UserService {
                     None,
                 )
                 .await,
-            )?;
+                &mut conn,
+            )
+            .await?;
 
-            let records =
-                transform_records(conn.pull(Some([("n", -1)].into_iter().collect())).await)?;
+            let records = transform_records(
+                conn.pull(Some([("n", -1)].into_iter().collect())).await,
+                &mut conn,
+            )
+            .await?;
 
             Ok(Response::new(FollowCheckResponses {
                 target_ids: records
@@ -212,9 +217,15 @@ async fn get_records(
     transform_result(
         conn.run(query, Some([("ids", ids)].into_iter().collect()), None)
             .await,
-    )?;
+        conn,
+    )
+    .await?;
 
-    transform_records(conn.pull(Some([("n", -1)].into_iter().collect())).await)
+    transform_records(
+        conn.pull(Some([("n", -1)].into_iter().collect())).await,
+        conn,
+    )
+    .await
 }
 
 /// Return id first.
@@ -276,13 +287,16 @@ fn get_properties<'s>(
     })
 }
 
-fn transform_result(
+async fn transform_result(
     r: Result<bolt_proto::Message, bolt_client::error::CommunicationError>,
+    conn: &mut PooledConnection<'_, bb8_bolt::Manager>,
 ) -> Result<(), Status> {
     match r {
         Ok(bolt_proto::Message::Success(_)) => Ok(()),
         Ok(res) => {
             warn!("{res:?}");
+            // TODO: ignore result
+            _ = conn.reset().await;
             return Err(Status::internal("Bad Database"));
         }
         Err(e) => {
@@ -292,16 +306,19 @@ fn transform_result(
     }
 }
 
-fn transform_records(
+async fn transform_records(
     r: Result<
         (Vec<bolt_proto::message::Record>, bolt_proto::Message),
         bolt_client::error::CommunicationError,
     >,
+    conn: &mut PooledConnection<'_, bb8_bolt::Manager>,
 ) -> Result<Vec<bolt_proto::message::Record>, Status> {
     match r {
         Ok((rec, bolt_proto::Message::Success(_))) => Ok(rec),
         Ok((_, res)) => {
             warn!("{res:?}");
+            // TODO: ignore result
+            _ = conn.reset().await;
             return Err(Status::internal("Bad Database"));
         }
         Err(e) => {
